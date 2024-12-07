@@ -1,10 +1,10 @@
 use std::collections::BTreeMap;
 
-
 advent_of_code::solution!(1);
 
 fn parse(input: &str) -> (Vec<u32>, Vec<u32>) {
-    input.lines()
+    input
+        .lines()
         .map(|line| {
             let mut nums = line.split_whitespace().map(|s| s.parse::<u32>().unwrap());
             (nums.next().unwrap(), nums.next().unwrap())
@@ -15,8 +15,7 @@ fn parse(input: &str) -> (Vec<u32>, Vec<u32>) {
 fn get_occurances(list: Vec<u32>) -> BTreeMap<u32, u32> {
     let mut occurances = BTreeMap::new();
     for num in list {
-        let count = occurances.entry(num).or_insert(0);
-        *count += 1;
+        *occurances.entry(num).or_insert(0) += 1;
     }
     occurances
 }
@@ -26,22 +25,27 @@ pub fn part_one(input: &str) -> Option<u32> {
     //now sort lists
     list_1.sort_unstable();
     list_2.sort_unstable();
-    let total_diff = list_1.iter().zip(list_2.iter())
+    let total_diff = list_1
+        .iter()
+        .zip(list_2.iter())
         .map(|(a, b)| a.abs_diff(*b))
         .sum();
     Some(total_diff)
 }
 
 pub fn part_two(input: &str) -> Option<u32> {
-    let (mut list_1, mut list_2) = parse(input);
+    let (list_1, list_2) = parse(input);
     let occurances_2 = get_occurances(list_2);
-    let total_simularity = list_1.iter().map(|num| {
-        if let Some(occurance) = occurances_2.get(&num) {
-            occurance * num
-        } else {
-            0
-        }
-    }).sum();
+    let total_simularity = list_1
+        .iter()
+        .map(|num| {
+            if let Some(occurance) = occurances_2.get(&num) {
+                occurance * num
+            } else {
+                0
+            }
+        })
+        .sum();
     Some(total_simularity)
 }
 
