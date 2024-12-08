@@ -1,3 +1,7 @@
+use std::collections::HashSet;
+
+use ahash::AHashSet;
+
 advent_of_code::solution!(6);
 #[derive(Debug, Clone)]
 pub enum Tile {
@@ -6,7 +10,7 @@ pub enum Tile {
     Guard,
     Obstruction,
 }
-#[derive(Debug, PartialEq, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
 pub enum Direction {
     North,
     West,
@@ -106,16 +110,16 @@ pub fn part_one(input: &str) -> Option<u32> {
 pub fn simulate(grid: &mut Vec<Vec<Tile>>, guard: &mut Guard) -> bool {
     let x_bound = grid[0].len();
     let y_bound = grid.len();
-    let mut prev: Vec<(Position, Direction)> = Vec::new();
+    let mut visited = AHashSet::new();
     loop {
         let pos_to_test = new_guard_pos(&guard);
         //check for bounds
         if let Some(pos_to_test) = pos_to_test {
             if pos_to_test.0 < x_bound && pos_to_test.1 < y_bound {
-                if prev.contains(&(pos_to_test, guard.direction)) {
+                if visited.contains(&(pos_to_test, guard.direction)) {
                     return true;
                 } else {
-                    prev.push((pos_to_test, guard.direction))
+                    visited.insert((pos_to_test, guard.direction));
                 }
                 //get grid and check for obstacle
                 let char = &grid[pos_to_test.1][pos_to_test.0];
