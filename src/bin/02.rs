@@ -45,8 +45,7 @@ pub fn part_two(input: &str) -> Option<u32> {
         input
             .iter()
             .filter(|f| {
-                let res = safe_input(f);
-                if !res {
+                if !safe_input(f) {
                     for index in 0..f.len() {
                         let mut new_vec = (*f).clone();
                         new_vec.remove(index);
