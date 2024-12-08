@@ -1,6 +1,7 @@
-use std::collections::HashSet;
+use std::{collections::HashSet, sync::atomic::AtomicU32};
 
 use ahash::AHashSet;
+use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 
 advent_of_code::solution!(6);
 #[derive(Debug, Clone)]
@@ -48,7 +49,7 @@ pub fn parse(input: &str) -> ((usize, usize), Vec<Vec<Tile>>) {
         .collect();
     (guard_pos, tile_vec)
 }
-
+#[inline(always)]
 pub fn new_guard_pos(guard: &Guard) -> Option<Position> {
     match guard.direction {
         Direction::North => guard.pos.1.checked_sub(1).map(|new_y| (guard.pos.0, new_y)),
@@ -67,16 +68,16 @@ pub fn part_one(input: &str) -> Option<u32> {
     let x_bound = grid[0].len();
     let y_bound = grid.len();
     loop {
-        let pos_to_test = new_guard_pos(&guard);
+        let pos_to_test: Option<(usize, usize)> = new_guard_pos(&guard);
         //check for bounds
-        if let Some(pos_to_test) = pos_to_test {
-            if pos_to_test.0 < x_bound && pos_to_test.1 < y_bound {
+        match pos_to_test {
+            Some((x, y)) if x < x_bound && y < y_bound => {
                 //get grid and check for obstacle
-                let char = &grid[pos_to_test.1][pos_to_test.0];
+                let char = &grid[y][x];
                 match char {
                     Tile::Empty(_) => {
-                        guard.pos = pos_to_test;
-                        grid[pos_to_test.1][pos_to_test.0] = Tile::Empty(true); // This actually updates the grid
+                        guard.pos = (x, y);
+                        grid[y][x] = Tile::Empty(true); // This actually updates the grid
                     }
                     Tile::Obstruction => {
                         //Update guard direction
@@ -91,11 +92,8 @@ pub fn part_one(input: &str) -> Option<u32> {
                         println!("We shouldn't be here :(, tile: {:?}", char);
                     }
                 }
-            } else {
-                break;
             }
-        } else {
-            break;
+            _ => break,
         }
     }
     //Now count all Tile::Empty(true)
@@ -114,19 +112,19 @@ pub fn simulate(grid: &mut Vec<Vec<Tile>>, guard: &mut Guard) -> bool {
     loop {
         let pos_to_test = new_guard_pos(&guard);
         //check for bounds
-        if let Some(pos_to_test) = pos_to_test {
-            if pos_to_test.0 < x_bound && pos_to_test.1 < y_bound {
-                if visited.contains(&(pos_to_test, guard.direction)) {
+        match pos_to_test {
+            Some((x, y)) if x < x_bound && y < y_bound => {
+                if visited.contains(&(x, y, guard.direction)) {
                     return true;
                 } else {
-                    visited.insert((pos_to_test, guard.direction));
+                    visited.insert((x, y, guard.direction));
                 }
                 //get grid and check for obstacle
-                let char = &grid[pos_to_test.1][pos_to_test.0];
+                let char = &grid[y][x];
                 match char {
                     Tile::Empty(_) => {
-                        guard.pos = pos_to_test;
-                        grid[pos_to_test.1][pos_to_test.0] = Tile::Empty(true); // This actually updates the grid
+                        guard.pos = (x, y);
+                        grid[y][x] = Tile::Empty(true); // This actually updates the grid
                     }
                     Tile::Obstruction => {
                         //Update guard direction
@@ -141,11 +139,8 @@ pub fn simulate(grid: &mut Vec<Vec<Tile>>, guard: &mut Guard) -> bool {
                         println!("We shouldn't be here :(, tile: {:?}", char);
                     }
                 }
-            } else {
-                break;
             }
-        } else {
-            break;
+            _ => break,
         }
     }
     //Now count all Tile::Empty(true)
@@ -162,7 +157,7 @@ pub fn part_two(input: &str) -> Option<u32> {
     let indicies: Vec<(usize, usize)> = grid
         .iter()
         .enumerate()
-        .map(|(y, row)| {
+        .flat_map(|(y, row)| {
             row.iter()
                 .enumerate()
                 .filter_map(|(x, tile)| match tile {
@@ -171,21 +166,22 @@ pub fn part_two(input: &str) -> Option<u32> {
                 })
                 .collect::<Vec<(usize, usize)>>()
         })
-        .flatten()
         .collect();
 
     //Go through indicies and simulate if they were a obstruction
-    let mut counter = 0;
-    for (x, y) in indicies {
-        let mut new_grid = grid.clone();
-        let mut new_guard = guard.clone();
-        new_grid[y][x] = Tile::Obstruction;
-        if simulate(&mut new_grid, &mut new_guard) {
-            counter += 1;
-        }
-    }
-
-    Some(counter)
+    Some(
+        indicies
+            .par_iter()
+            .filter(|x| {
+                let mut grid = grid.clone();
+                let mut guard = guard.clone();
+                grid[x.1][x.0] = Tile::Obstruction;
+                simulate(&mut grid, &mut guard)
+            })
+            .count()
+            .try_into()
+            .unwrap(),
+    )
 }
 
 #[cfg(test)]
