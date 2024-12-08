@@ -1,5 +1,3 @@
-use std::{collections::HashSet, sync::atomic::AtomicU32};
-
 use ahash::AHashSet;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 
@@ -114,10 +112,8 @@ pub fn simulate(grid: &mut Vec<Vec<Tile>>, guard: &mut Guard) -> bool {
         //check for bounds
         match pos_to_test {
             Some((x, y)) if x < x_bound && y < y_bound => {
-                if visited.contains(&(x, y, guard.direction)) {
+                if !visited.insert((x, y, guard.direction)) {
                     return true;
-                } else {
-                    visited.insert((x, y, guard.direction));
                 }
                 //get grid and check for obstacle
                 let char = &grid[y][x];
