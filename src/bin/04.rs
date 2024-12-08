@@ -58,19 +58,19 @@ pub fn part_one(input: &str) -> Option<u32> {
     Some(count)
 }
 
-pub fn check_directions(input: &Vec<Vec<char>>, x: usize, y: usize) -> bool{
+pub fn check_directions(input: &Vec<Vec<char>>, x: usize, y: usize) -> bool {
     //Check to see if there are diagonals to look for
     if x == 0 || y == 0 || x >= input[0].len() - 1 || y >= input.len() - 1 {
         return false;
     }
 
     let diags = (
-        (input[y - 1][x - 1], input[y + 1][x + 1]),  // top-left to bottom-right diagonal
-        (input[y - 1][x + 1], input[y + 1][x - 1])   // top-right to bottom-left diagonal
+        (input[y - 1][x - 1], input[y + 1][x + 1]), // top-left to bottom-right diagonal
+        (input[y - 1][x + 1], input[y + 1][x - 1]), // top-right to bottom-left diagonal
     );
 
     if check_diagonal(diags.0) && check_diagonal(diags.1) {
-        return true ;
+        return true;
     }
 
     return false;
